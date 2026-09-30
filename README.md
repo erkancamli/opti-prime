@@ -45,3 +45,7 @@ npm start -- --port 43127
 - ShredFactor, MeshDegree, ForwardThreshold, ShardMultiplier canlı
 
 Kaynaklar: [getoptimum.xyz](https://www.getoptimum.xyz/), [docs](https://docs.getoptimum.xyz/), [X](https://x.com/get_optimum).
+
+## Netlify
+
+Repo GitHub’a bağlandıktan sonra [Netlify](https://app.netlify.com/start) üzerinden GitHub’dan içe aktar. Next.js otomatik tanınır. Derleme komutu `npm run build`, Node 22. Site `*.netlify.app` adresinde herkese açık yayınlanır.
