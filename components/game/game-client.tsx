@@ -11,6 +11,7 @@ import { gradeFrom, Simulation } from "@/lib/simulation";
 import type { DebriefScore, Mission, ProtocolConfig, SimSnapshot } from "@/lib/types";
 
 export function GameClient({ mission }: { mission: Mission }) {
+  const [mounted, setMounted] = useState(false);
   const [engine, setEngine] = useState(
     () => new Simulation(mission, (Date.now() ^ mission.index * 7919) >>> 0)
   );
@@ -25,6 +26,11 @@ export function GameClient({ mission }: { mission: Mission }) {
     setScore(null);
     setPhase("brief");
   };
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(frame);
+  }, []);
 
   useEffect(() => {
     if (phase !== "live") return;
@@ -110,6 +116,18 @@ export function GameClient({ mission }: { mission: Mission }) {
     fn();
     setSnapshot(engine.snapshot());
   };
+
+  if (!mounted) {
+    return (
+      <div className="min-h-dvh bg-black pt-24 text-white">
+        <div className="mx-auto max-w-3xl px-6">
+          <p className="text-[11px] tracking-[0.28em] text-white/40 uppercase">{mission.code}</p>
+          <h1 className="mt-3 font-heading text-4xl tracking-tight">{mission.title}</h1>
+          <p className="mt-4 max-w-xl text-sm text-white/50">{mission.subtitle}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative flex min-h-dvh flex-col bg-black pt-20 text-white">

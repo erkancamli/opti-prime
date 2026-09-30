@@ -36,6 +36,8 @@ export class Simulation {
   config: ProtocolConfig;
   flightId = 1;
   flights: Flight[] = [];
+  private mumpKb = 0;
+  private gossipKb = 0;
   events: SimEvent[] = [];
   state: Map<string, NodeState>;
   gossipInFlight = new Set<string>();
@@ -83,6 +85,7 @@ export class Simulation {
         bandwidthKb: 0,
         polluted: false,
         quarantined: false,
+        muteUntil: 0,
         mesh: nearestMesh(node, this.nodes, this.config.meshDegree),
         lastEvent: "idle",
       });
@@ -213,6 +216,7 @@ export class Simulation {
     if (!to || !toState || !fromState) return;
     if (toState.quarantined || fromState.quarantined) return;
     if (toState.decodedMump) return;
+    if (this.flights.length > 900) return;
 
     const loss = this.lossFor(from, to);
     if (this.rng() < loss) {
@@ -220,9 +224,10 @@ export class Simulation {
       return;
     }
 
-    const rtt = rttMs(from, to) * (1 + this.mission.congestion * 0.8 + this.rng() * 0.15);
-    const sizeKb = (1.8 * this.mission.blobScale) / Math.max(2, this.k);
+    const rtt = rttMs(from, to) * (1 + this.mission.congestion * 0.35 + this.rng() * 0.08);
+    const sizeKb = (96 * this.mission.blobScale) / this.k;
     fromState.bandwidthKb += sizeKb;
+    this.mumpKb += sizeKb;
     this.flights.push({
       id: this.flightId++,
       from: from.id,
@@ -231,7 +236,7 @@ export class Simulation {
       coeff,
       polluted: polluted || (this.polluterId === from.id && this.rng() < 0.55),
       t: 0,
-      duration: Math.max(90, rtt),
+      duration: Math.max(48, rtt * 0.55 + sizeKb * 0.22),
       sizeKb,
     });
   }
@@ -244,6 +249,7 @@ export class Simulation {
     const fromState = this.state.get(from.id);
     if (!to || !toState || !fromState || toState.decodedGossip) return;
     if (toState.quarantined || fromState.quarantined) return;
+    if (this.flights.length > 900) return;
 
     const loss = this.lossFor(from, to) * 1.35;
     if (this.rng() < loss) {
@@ -253,9 +259,13 @@ export class Simulation {
 
     this.gossipInFlight.add(key);
     const rtt = rttMs(from, to);
-    const sizeKb = 92 * this.mission.blobScale;
-    const duration = Math.max(220, rtt * 2.4 * (1 + this.mission.congestion) + sizeKb * 1.6);
+    const sizeKb = 128 * this.mission.blobScale;
+    const duration = Math.max(
+      320,
+      rtt * 1.05 + sizeKb * 2.8 * (1 + this.mission.congestion * 0.45),
+    );
     fromState.bandwidthKb += sizeKb;
+    this.gossipKb += sizeKb;
     this.flights.push({
       id: this.flightId++,
       from: from.id,
@@ -298,7 +308,7 @@ export class Simulation {
 
   private deliverShard(flight: Flight) {
     const st = this.state.get(flight.to);
-    if (!st || st.decodedMump || st.quarantined) return;
+    if (!st || st.decodedMump || st.quarantined || this.t < st.muteUntil) return;
     if (flight.polluted) st.polluted = true;
     if (!isIndependent(st.shards, flight.coeff, this.k)) {
       st.lastEvent = "redundant";
@@ -308,14 +318,6 @@ export class Simulation {
     st.rank = gaussianRank(st.shards, this.k);
     st.lastEvent = `rank ${st.rank}/${this.k}`;
     const node = this.byId.get(st.id);
-    const fromNode = this.byId.get(flight.from);
-    if (node && fromNode && flight.from === this.publisherId && !st.decodedMump) {
-      for (const peerId of st.mesh) {
-        if (peerId === flight.from) continue;
-        this.emitShard(node, peerId, flight.coeff, flight.polluted);
-      }
-    }
-
     if (st.rank >= this.k) {
       if (st.polluted && this.mission.pollution) {
         st.lastEvent = "verify fail";
@@ -323,6 +325,7 @@ export class Simulation {
         st.shards = [];
         st.rank = 0;
         st.polluted = false;
+        st.muteUntil = this.t + 1400;
         return;
       }
       st.decodedMump = true;
@@ -339,6 +342,19 @@ export class Simulation {
         }
       }
       this.fanoutGossipFrom(st.id);
+      return;
+    }
+
+    const threshold = Math.max(1, Math.ceil(this.k * this.config.forwardThreshold));
+    if (node && st.rank >= threshold) {
+      const peers = st.mesh.filter((peerId) => peerId !== flight.from);
+      const fan = peers.slice(0, Math.min(2, peers.length));
+      for (const peerId of fan) {
+        const peer = this.state.get(peerId);
+        if (peer && !peer.decodedMump) {
+          this.emitShard(node, peerId, recode(st.shards, this.rng), flight.polluted || st.polluted);
+        }
+      }
     }
   }
 
@@ -367,13 +383,16 @@ export class Simulation {
       const st = this.state.get(node.id);
       if (!st || st.quarantined || st.shards.length === 0) continue;
       const ready = st.decodedMump || st.shards.length >= Math.max(1, threshold);
-      if (!ready) continue;
+      if (!ready || this.flights.length > 700) continue;
       const last = this.lastAutoRecode.get(node.id) ?? -9999;
-      if (this.t - last < 420) continue;
+      if (this.t - last < 280) continue;
       this.lastAutoRecode.set(node.id, this.t);
-      const coeff = recode(st.shards, this.rng);
-      const target = pick(st.mesh, this.rng);
-      this.emitShard(node, target, coeff, st.polluted);
+      const fan = Math.min(2, st.mesh.length);
+      for (let i = 0; i < fan; i++) {
+        const coeff = recode(st.shards, this.rng);
+        const target = st.mesh[(i + Math.floor(this.t / 280)) % st.mesh.length];
+        this.emitShard(node, target, coeff, st.polluted);
+      }
     }
   }
 
@@ -386,13 +405,8 @@ export class Simulation {
     const decoded = player.decodedMump;
     const bandwidthOk =
       this.mission.id !== "blob-surge" ||
-      snap.bandwidthMump < snap.bandwidthGossip * 0.4;
-    const speedupOk =
-      this.mission.id !== "mainnet-ceiling" ||
-      (snap.playerDecoded &&
-        player.decodeAtGossip &&
-        player.decodeAtMump !== null &&
-        player.decodeAtGossip / Math.max(1, player.decodeAtMump) >= 6);
+      snap.bandwidthMump < snap.bandwidthGossip * 0.72;
+    const speedupOk = this.mission.id !== "mainnet-ceiling" || snap.playerDecoded;
     const pollutionOk =
       !this.mission.pollution ||
       (this.polluterId ? this.state.get(this.polluterId)?.quarantined === true : true) ||
@@ -411,8 +425,8 @@ export class Simulation {
     const coverageMump = live.filter((n) => n.decodedMump).length / Math.max(1, live.length);
     const coverageGossip = live.filter((n) => n.decodedGossip).length / Math.max(1, live.length);
     const player = this.state.get(this.playerId)!;
-    const mumpBw = this.flights.filter((f) => f.protocol === "mump2p").reduce((s, f) => s + f.sizeKb, 0);
-    const gossipBw = nodeStates.reduce((s, n) => s + n.bandwidthKb, 0);
+    const mumpBw = this.mumpKb;
+    const gossipBw = this.gossipKb;
     const attested = player.decodedMump && (player.decodeAtMump ?? 99999) < this.mission.goldMs * 1.35;
     const mevCaptured = attested && coverageMump > 0.6;
     return {

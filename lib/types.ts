@@ -70,6 +70,7 @@ export interface NodeState {
   bandwidthKb: number;
   polluted: boolean;
   quarantined: boolean;
+  muteUntil: number;
   mesh: string[];
   lastEvent: string;
 }
