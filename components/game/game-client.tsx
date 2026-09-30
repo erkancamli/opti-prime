@@ -130,9 +130,9 @@ export function GameClient({ mission }: { mission: Mission }) {
   }
 
   return (
-    <div className="relative flex min-h-dvh flex-col bg-black pt-20 text-white">
+    <div className="relative flex h-dvh flex-col overflow-hidden bg-black pt-20 text-white">
       <div className="mx-auto grid min-h-0 w-full max-w-[1600px] flex-1 grid-cols-1 md:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="relative min-h-[52vh] md:min-h-0">
+        <div className="relative min-h-[42vh] md:min-h-0">
           <MeshCanvas snapshot={snapshot} world={world} onSelect={select} />
           <div className="pointer-events-none absolute left-4 top-4 rounded-full border border-white/10 bg-black/50 px-3 py-1 font-mono text-[10px] tracking-[0.2em] text-white/60 uppercase backdrop-blur">
             {mission.network}
@@ -155,7 +155,28 @@ export function GameClient({ mission }: { mission: Mission }) {
       </div>
 
       {phase === "brief" && (
-        <Overlay>
+        <Overlay
+          actions={
+            <div className="flex flex-wrap items-center gap-3">
+              <Button
+                size="lg"
+                className="rounded-full px-6 tracking-[0.18em] uppercase"
+                onClick={() => setPhase("live")}
+              >
+                Sidecar’ı başlat
+              </Button>
+              <Link
+                href="/play"
+                className="inline-flex h-9 items-center rounded-full border border-white/20 px-6 text-sm tracking-[0.18em] text-white uppercase"
+              >
+                Görevler
+              </Link>
+              <span className="font-mono text-[11px] text-white/35">
+                Space recode · W IWANT · Q karantina
+              </span>
+            </div>
+          }
+        >
           <p className="text-[11px] tracking-[0.28em] uppercase text-white/40">
             {mission.code} · briefing
           </p>
@@ -174,29 +195,25 @@ export function GameClient({ mission }: { mission: Mission }) {
               </li>
             ))}
           </ul>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Button
-              size="lg"
-              className="rounded-full px-6 tracking-[0.18em] uppercase"
-              onClick={() => setPhase("live")}
-            >
-              Sidecar’ı başlat
-            </Button>
-            <Link
-              href="/play"
-              className="inline-flex h-9 items-center rounded-full border border-white/20 px-6 text-sm tracking-[0.18em] text-white uppercase"
-            >
-              Görevler
-            </Link>
-          </div>
-          <p className="mt-6 font-mono text-[11px] text-white/35">
-            Space recode · W IWANT · Q karantina · tıklayarak peer seç
-          </p>
         </Overlay>
       )}
 
       {phase === "debrief" && score && (
-        <Overlay>
+        <Overlay
+          actions={
+            <div className="flex flex-wrap gap-3">
+              <Button size="lg" className="rounded-full px-6 tracking-[0.18em] uppercase" onClick={restart}>
+                Slot’u tekrarla
+              </Button>
+              <Link
+                href="/play"
+                className="inline-flex h-9 items-center rounded-full border border-white/20 px-6 text-sm tracking-[0.18em] text-white uppercase"
+              >
+                Sonraki görev
+              </Link>
+            </div>
+          }
+        >
           <p className="text-[11px] tracking-[0.28em] uppercase text-white/40">slot kapanışı</p>
           <h1 className="mt-3 font-heading text-5xl tracking-tight">
             {score.won ? "Attestation landed." : "Pencere kaçtı."}
@@ -215,27 +232,29 @@ export function GameClient({ mission }: { mission: Mission }) {
               ? "Coded shards GossipSub’ın tam-blok kopyalarından önce ağı doldurdu. Optimum’un iddiası bu: daha az ilet, daha çoğunu teslim et."
               : "Rank k’ye ulaşmadı veya kapsama hedefi kaçtı. ShredFactor, mesh ve recode eşiğini bir sonraki slotta yeniden dengeleyin."}
           </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Button size="lg" className="rounded-full px-6 tracking-[0.18em] uppercase" onClick={restart}>
-              Slot’u tekrarla
-            </Button>
-            <Link
-              href="/play"
-              className="inline-flex h-9 items-center rounded-full border border-white/20 px-6 text-sm tracking-[0.18em] text-white uppercase"
-            >
-              Sonraki görev
-            </Link>
-          </div>
         </Overlay>
       )}
     </div>
   );
 }
 
-function Overlay({ children }: { children: React.ReactNode }) {
+function Overlay({
+  children,
+  actions,
+}: {
+  children: React.ReactNode;
+  actions?: React.ReactNode;
+}) {
   return (
-    <div className="absolute inset-0 z-20 flex items-end bg-black/55 px-6 py-10 backdrop-blur-md sm:px-12">
-      <div className="mx-auto w-full max-w-5xl">{children}</div>
+    <div className="absolute inset-0 z-20 flex flex-col bg-black/72 backdrop-blur-md">
+      <div className="min-h-0 flex-1 overflow-y-auto px-6 pt-8 sm:px-12">
+        <div className="mx-auto flex min-h-full max-w-5xl flex-col justify-end pb-6">{children}</div>
+      </div>
+      {actions ? (
+        <div className="shrink-0 border-t border-white/10 bg-black/80 px-6 py-4 sm:px-12">
+          <div className="mx-auto max-w-5xl">{actions}</div>
+        </div>
+      ) : null}
     </div>
   );
 }

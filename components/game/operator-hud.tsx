@@ -60,7 +60,7 @@ export function OperatorHud({
     gossipMs && mumpMs ? Math.max(1, gossipMs / Math.max(1, mumpMs)) : null;
 
   return (
-    <aside className="flex h-full flex-col gap-4 overflow-y-auto border-white/10 bg-black/55 p-4 text-white backdrop-blur-xl md:border-l">
+    <aside className="flex h-full min-h-0 flex-col gap-4 overflow-y-auto border-white/10 bg-black/55 p-4 text-white backdrop-blur-xl md:border-l">
       <div>
         <p className="text-[10px] tracking-[0.28em] uppercase text-white/40">
           {snapshot.mission.code} · {snapshot.mission.network}
