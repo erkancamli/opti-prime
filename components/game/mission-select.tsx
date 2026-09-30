@@ -19,8 +19,8 @@ export function MissionSelect() {
 
   return (
     <div className="relative min-h-dvh bg-black pt-28 text-white">
-      <ChromeField subtle />
-      <div className="relative mx-auto max-w-6xl px-6 pb-24">
+      <ChromeField variant="edge" />
+      <div className="relative z-10 mx-auto max-w-6xl px-6 pb-24">
         <p className="text-[11px] tracking-[0.32em] uppercase text-white/40">Operator queue</p>
         <h1 className="mt-3 max-w-3xl font-heading text-5xl leading-[1.05] tracking-tight md:text-6xl">
           <span className="font-light text-white/50">Fix the foundation.</span>

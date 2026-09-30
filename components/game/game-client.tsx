@@ -171,9 +171,9 @@ export function GameClient({ mission }: { mission: Mission }) {
               >
                 Görevler
               </Link>
-              <span className="font-mono text-[11px] text-white/35">
-                Space recode · W IWANT · Q karantina
-              </span>
+              <p className="hidden font-mono text-[11px] text-white/35 sm:ml-auto sm:block">
+                Space recode · W IWANT · Q karantina · peer seç
+              </p>
             </div>
           }
         >
@@ -229,7 +229,9 @@ export function GameClient({ mission }: { mission: Mission }) {
           </div>
           <p className="mt-6 max-w-xl text-sm leading-relaxed text-white/55">
             {score.won
-              ? "Coded shards GossipSub’ın tam-blok kopyalarından önce ağı doldurdu. Optimum’un iddiası bu: daha az ilet, daha çoğunu teslim et."
+              ? score.speedup && score.speedup >= 1
+                ? "Coded shards bu slotta tam-blok kopyalarından önce ağı doldurdu. Masadaki çarpan, Hoodi’nin yayımlanan 6–20× rakamı değil; bu mesh’in kendi saatidir."
+                : "Kapsama tuttu. Bu slotta GossipSub daha erken decode oldu — yayımlanan Hoodi çarpanı bu masanın skoru değildir."
               : "Rank k’ye ulaşmadı veya kapsama hedefi kaçtı. ShredFactor, mesh ve recode eşiğini bir sonraki slotta yeniden dengeleyin."}
           </p>
         </Overlay>
@@ -246,8 +248,8 @@ function Overlay({
   actions?: React.ReactNode;
 }) {
   return (
-    <div className="absolute inset-0 z-20 flex flex-col bg-black/72 backdrop-blur-md">
-      <div className="min-h-0 flex-1 overflow-y-auto px-6 pt-8 sm:px-12">
+    <div className="fixed inset-0 z-20 flex flex-col bg-black/72 backdrop-blur-md">
+      <div className="min-h-0 flex-1 overflow-y-auto px-6 pt-24 sm:px-12">
         <div className="mx-auto flex min-h-full max-w-5xl flex-col justify-end pb-6">{children}</div>
       </div>
       {actions ? (

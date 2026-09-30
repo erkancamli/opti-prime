@@ -43,6 +43,7 @@ export class Simulation {
   gossipInFlight = new Set<string>();
   polluterId: string | null = null;
   lastAutoRecode = new Map<string, number>();
+  private closeAt: number | null = null;
 
   constructor(mission: Mission, seed = 0xc0de915) {
     this.mission = mission;
@@ -183,7 +184,16 @@ export class Simulation {
     this.t += dt;
     this.advanceFlights(dt);
     this.maybeAutoRecode();
-    if (this.t >= this.mission.durationMs) this.finish();
+    if (this.t >= this.mission.durationMs) {
+      this.finish();
+      return;
+    }
+    if (this.objectivesMet()) {
+      if (this.closeAt == null) this.closeAt = this.t + 1600;
+      if (this.t >= this.closeAt) this.finish();
+    } else {
+      this.closeAt = null;
+    }
   }
 
   private publish() {
@@ -396,22 +406,24 @@ export class Simulation {
     }
   }
 
-  private finish() {
-    this.running = false;
-    this.finished = true;
+  private objectivesMet() {
     const snap = this.snapshot();
     const player = this.state.get(this.playerId)!;
     const coverageOk = snap.coverageMump >= this.mission.targetCoverage;
     const decoded = player.decodedMump;
     const bandwidthOk =
-      this.mission.id !== "blob-surge" ||
-      snap.bandwidthMump < snap.bandwidthGossip * 0.72;
-    const speedupOk = this.mission.id !== "mainnet-ceiling" || snap.playerDecoded;
+      this.mission.id !== "blob-surge" || snap.bandwidthMump < snap.bandwidthGossip * 0.72;
     const pollutionOk =
       !this.mission.pollution ||
       (this.polluterId ? this.state.get(this.polluterId)?.quarantined === true : true) ||
       decoded;
-    this.won = Boolean(decoded && coverageOk && bandwidthOk && (speedupOk || this.mission.id !== "mainnet-ceiling") && pollutionOk);
+    return decoded && coverageOk && bandwidthOk && pollutionOk;
+  }
+
+  private finish() {
+    this.running = false;
+    this.finished = true;
+    this.won = this.objectivesMet();
   }
 
   private pushEvent(kind: SimEvent["kind"], text: string, node?: string) {

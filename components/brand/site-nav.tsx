@@ -21,7 +21,7 @@ export function SiteNav({ ghost = false }: { ghost?: boolean }) {
         ghost && "mix-blend-difference"
       )}
     >
-      <nav className="pointer-events-auto flex w-full max-w-6xl items-center justify-between rounded-full border border-white/10 bg-black/40 px-3 py-2 text-white shadow-[0_12px_40px_rgba(0,0,0,0.35)] backdrop-blur-xl sm:px-5">
+      <nav className="pointer-events-auto flex w-full max-w-6xl items-center justify-between rounded-full border border-white/10 bg-[#0c0c0c]/90 px-3 py-2 text-white shadow-[0_12px_40px_rgba(0,0,0,0.35)] backdrop-blur-xl sm:px-5">
         <Link href="/" className="flex items-center gap-2.5 pr-2">
           <OptimumMark className="h-4 w-8" />
           <span className="text-[11px] tracking-[0.28em] uppercase text-white/80">

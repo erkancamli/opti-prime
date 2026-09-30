@@ -7,19 +7,30 @@ export interface ProgressState {
   best: Record<string, DebriefScore>;
 }
 
+const EMPTY_PROGRESS: ProgressState = { cleared: [], best: {} };
+let cachedRaw: string | null = null;
+let cachedProgress: ProgressState = EMPTY_PROGRESS;
+
 export function loadProgress(): ProgressState {
-  if (typeof window === "undefined") return { cleared: [], best: {} };
+  if (typeof window === "undefined") return EMPTY_PROGRESS;
   try {
     const raw = window.localStorage.getItem(KEY);
-    if (!raw) return { cleared: [], best: {} };
-    return JSON.parse(raw) as ProgressState;
+    if (!raw) return EMPTY_PROGRESS;
+    if (raw === cachedRaw) return cachedProgress;
+    cachedRaw = raw;
+    cachedProgress = JSON.parse(raw) as ProgressState;
+    return cachedProgress;
   } catch {
-    return { cleared: [], best: {} };
+    return EMPTY_PROGRESS;
   }
 }
 
 export function saveScore(score: DebriefScore): ProgressState {
-  const current = loadProgress();
+  const loaded = loadProgress();
+  const current: ProgressState = {
+    cleared: [...loaded.cleared],
+    best: { ...loaded.best },
+  };
   if (score.won && !current.cleared.includes(score.missionId)) {
     current.cleared.push(score.missionId);
   }

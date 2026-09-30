@@ -68,7 +68,7 @@ export const MISSIONS: Mission[] = [
     subtitle: "Asya gecikmesi",
     briefing:
       "Seoul ve Singapore, Ethereum mesh’inin seyrek ucunda. FP Validated’ın testnet notu: bölgeler arası RTT attestation penceresini yer. mump2p’nin ~150ms ağ-çapı teslimatı burada anlam kazanır. Mesh derecesini APAC’a doğru açın — GRAFT, PRUNE.",
-    objective: "APAC düğümlerinin çoğunu GossipSub’dan en az 4× önce decode ettirin.",
+    objective: "Uzak RTT’de kendi sidecar’ınızda decode edin ve kapsamayı %72’nin üzerine çıkarın.",
     network: "Hoodi · APAC bias",
     durationMs: 34000,
     nodeCount: 16,
@@ -155,7 +155,7 @@ export const MISSIONS: Mission[] = [
     subtitle: "Flexnode hattı",
     briefing:
       "Flexnode’lar, validator’ların satın aldığı hızı üretir. Siz bir Flexnode işletiyorsunuz: bandwidth’inizi coded mesh’e verin, slot içi teslimatı kısaltın. Ödül, hızın ekonomik değerinden gelir — MEV ve attestation penceresi. Sidecar hâlâ consensus’un dışında.",
-    objective: "Ağ çapında %85 kapsama; player decode 5s altında.",
+    objective: "Ağ çapında %85 kapsama ve kendi decode’unuz. Attestation 5 saniye içindeyse MEV düşer.",
     network: "Optimum Flexnet",
     durationMs: 38000,
     nodeCount: 18,
